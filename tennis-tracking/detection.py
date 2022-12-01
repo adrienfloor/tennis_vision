@@ -325,7 +325,7 @@ def merge(frame, image):
 
   frame[:img_h, w:] = resized
 
-  return frame 
+  return frame
 
 def draw_ball_position(frame, court_detector, xy, i):
         """
@@ -342,7 +342,7 @@ def draw_ball_position(frame, court_detector, xy, i):
           cv2.circle(frame, (transformed[0], transformed[1]), 35, (0,255,255), -1)
         else:
           pass
-        return img 
+        return img
 
         # # Smooth ball locations
         # positions = np.array(positions)
@@ -406,7 +406,7 @@ def calculate_feet_positions(self, court_detector):
 #     out = cv2.VideoWriter('VideoOutput/minimap.mp4',cv2.VideoWriter_fourcc('X', 'V', 'I', 'D'), fps, (v_width, v_height))
 #     # players location on court
 #     smoothed_1, smoothed_2 = detection_model.calculate_feet_positions(court_detector)
-#     i = 0 
+#     i = 0
 #     for feet_pos_1, feet_pos_2 in zip(smoothed_1, smoothed_2):
 #         frame = court.copy()
 #         frame = cv2.circle(frame, (int(feet_pos_1[0]), int(feet_pos_1[1])), 45, (255, 0, 0), -1)
@@ -429,12 +429,35 @@ def create_top_view(court_detector, detection_model, xy, fps):
     out = cv2.VideoWriter('VideoOutput/minimap.mp4',cv2.VideoWriter_fourcc('X', 'V', 'I', 'D'), fps, (v_width, v_height))
     # players location on court
     smoothed_1, smoothed_2 = detection_model.calculate_feet_positions(court_detector)
-    i = 0 
+    i = 0
     for feet_pos_1, feet_pos_2 in zip(smoothed_1, smoothed_2):
         frame = court.copy()
         frame = cv2.circle(frame, (int(feet_pos_1[0]), int(feet_pos_1[1])), 45, (255, 0, 0), -1)
         if feet_pos_2[0] is not None:
             frame = cv2.circle(frame, (int(feet_pos_2[0]), int(feet_pos_2[1])), 45, (255, 0, 0), -1)
+        draw_ball_position(frame, court_detector, coords[i], i)
+        i += 1
+        out.write(frame)
+    out.release()
+
+def create_top_view_mini_map(court_detector, detection_model, xy, fps):
+    """
+    Creates top view video of the gameplay
+    """
+    coords = xy[:]
+    court = court_detector.court_reference.court.copy()
+    court = cv2.line(court, *court_detector.court_reference.net, 255, 5)
+    v_width, v_height = court.shape[::-1]
+    court = cv2.cvtColor(court, cv2.COLOR_GRAY2BGR)
+    out = cv2.VideoWriter('VideoOutput/minimap.mp4',cv2.VideoWriter_fourcc('X', 'V', 'I', 'D'), fps, (v_width, v_height))
+    # players location on court
+    smoothed_1, smoothed_2 = detection_model.calculate_feet_positions(court_detector)
+    i = 0
+    for feet_pos_1, feet_pos_2 in zip(smoothed_1, smoothed_2):
+        frame = court.copy()
+        #frame = cv2.circle(frame, (int(feet_pos_1[0]), int(feet_pos_1[1])), 45, (255, 0, 0), -1)
+        #if feet_pos_2[0] is not None:
+            #frame = cv2.circle(frame, (int(feet_pos_2[0]), int(feet_pos_2[1])), 45, (255, 0, 0), -1)
         draw_ball_position(frame, court_detector, coords[i], i)
         i += 1
         out.write(frame)
@@ -485,9 +508,9 @@ def diff_xy(coords):
       diff_list.append(diff)
     else:
       diff_list.append(None)
-  
+
   xx, yy = np.array([x[0] if x is not None else np.nan for x in diff_list]), np.array([x[1] if x is not None else np.nan for x in diff_list])
-  
+
   return xx, yy
 
 # def remove_outliers(x, y, coords):
@@ -531,7 +554,7 @@ if __name__ == "__main__":
 
   court_detector = CourtDetector()
   detection_model = DetectionModel(dtype=dtype)
-  
+
   video = cv2.VideoCapture('VideoInput/video_input1.mp4')
   print('Video FPS ', video.get(cv2.CAP_PROP_FPS))
   # get videos properties
@@ -561,14 +584,14 @@ if __name__ == "__main__":
         # for i in range(0, len(lines), 4):
           # x1, y1, x2, y2 = lines[i],lines[i+1], lines[i+2], lines[i+3]
           # cv2.line(frame, (x1,y1),(x2,y2), (0,255,255), 3) # output_img = draw_line(output_img)
-      
+
       print(frame_i, '\n', lines)
       detection_model.detect_player_1(frame, court_detector)
       detection_model.detect_top_persons(frame, court_detector, frame_i)
       for i in range(0, len(lines), 4):
         x1, y1, x2, y2 = lines[i],lines[i+1], lines[i+2], lines[i+3]
         cv2.line(frame, (x1,y1),(x2,y2), (255,192,203), 3)
-      
+
       new_frame = cv2.resize(frame, (v_width, v_height))
       frames.append(new_frame)
 
@@ -580,11 +603,11 @@ if __name__ == "__main__":
   print('First Video Released')
   detection_model.find_player_2_box()
 
-  # second part 
+  # second part
   player1_boxes = detection_model.player_1_boxes
   player2_boxes = detection_model.player_2_boxes
   print('Player 1 Boxes :', player1_boxes)
-  
+
   cap = cv2.VideoCapture('VideoInput/video_input1.mp4')
   print('Cap FPS ', cap.get(cv2.CAP_PROP_FPS))
   #props
