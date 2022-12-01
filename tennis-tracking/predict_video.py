@@ -1,11 +1,11 @@
 import argparse
 import queue
-import pandas as pd 
+import pandas as pd
 import pickle
 import imutils
 import os
 from PIL import Image, ImageDraw
-import cv2 
+import cv2
 import numpy as np
 import torch
 import sys
@@ -55,7 +55,7 @@ output_height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 # try to determine the total number of frames in the video file
 if imutils.is_cv2() is True :
     prop = cv2.cv.CV_CAP_PROP_FRAME_COUNT
-else : 
+else :
     prop = cv2.CAP_PROP_FRAME_COUNT
 total = int(video.get(prop))
 
@@ -100,6 +100,18 @@ coords = []
 frame_i = 0
 frames = []
 t = []
+xTopLeft = 0
+yTopLeft = 0
+xBottomLeft = 0
+yBottomLeft = 0
+xTopRight = 0
+yTopRight= 0
+xBottomRight = 0
+yBottomRight = 0
+xMiddleLeft = 0
+yMiddleLeft = 0
+xMiddleRight = 0
+yMiddleRight = 0
 
 while True:
   ret, frame = video.read()
@@ -109,11 +121,23 @@ while True:
     if frame_i == 1:
       print('Detecting the court and the players...')
       lines = court_detector.detect(frame)
+      xTopLeft = lines[20]
+      yTopLeft = lines[21]
+      xBottomLeft = lines[22]
+      yBottomLeft = lines[23]
+      xTopRight = lines[24]
+      yTopRight= lines[25]
+      xBottomRight = lines[26]
+      yBottomRight = lines[27]
+      xMiddleLeft = lines[8]
+      yMiddleLeft = lines[9]
+      xMiddleRight = lines[10]
+      yMiddleRight = lines[11]
     else: # then track it
       lines = court_detector.track_court(frame)
     detection_model.detect_player_1(frame, court_detector)
     detection_model.detect_top_persons(frame, court_detector, frame_i)
-    
+
     for i in range(0, len(lines), 4):
       x1, y1, x2, y2 = lines[i],lines[i+1], lines[i+2], lines[i+3]
       cv2.line(frame, (int(x1),int(y1)),(int(x2),int(y2)), (0,0,255), 5)
@@ -126,14 +150,14 @@ print('Finished!')
 
 detection_model.find_player_2_box()
 
-# second part 
+# second part
 player1_boxes = detection_model.player_1_boxes
 player2_boxes = detection_model.player_2_boxes
 
 video = cv2.VideoCapture(input_video_path)
 frame_i = 0
 
-last = time.time() # start counting 
+last = time.time() # start counting
 # while (True):
 for img in frames:
     print('Tracking the ball: {}'.format(round( (currentFrame / total) * 100, 2)))
@@ -174,7 +198,7 @@ for img in frames:
 
     output_img = mark_player_box(output_img, player1_boxes, currentFrame-1)
     output_img = mark_player_box(output_img, player2_boxes, currentFrame-1)
-    
+
     PIL_image = cv2.cvtColor(output_img, cv2.COLOR_BGR2RGB)
     PIL_image = Image.fromarray(PIL_image)
 
@@ -241,10 +265,10 @@ if minimap == 1:
   output_height = int(game_video.get(cv2.CAP_PROP_FRAME_HEIGHT))
   print('game ', fps1)
   output_video = cv2.VideoWriter('VideoOutput/video_with_map.mp4', fourcc, fps, (output_width, output_height))
-  
+
   print('Adding the mini-map...')
 
-  # Remove Outliers 
+  # Remove Outliers
   x, y = diff_xy(coords)
   remove_outliers(x, y, coords)
   # Interpolation
@@ -273,7 +297,7 @@ for _ in range(3):
 # interpolation
 coords = interpolation(coords)
 
-# velocty 
+# velocty
 Vx = []
 Vy = []
 V = []
@@ -298,15 +322,15 @@ for i in range(len(Vx)):
 xy = coords[:]
 
 if bounce == 1:
-  # Predicting Bounces 
+  # Predicting Bounces
   test_df = pd.DataFrame({'x': [coord[0] for coord in xy[:-1]], 'y':[coord[1] for coord in xy[:-1]], 'V': V})
 
   # df.shift
-  for i in range(20, 0, -1): 
+  for i in range(20, 0, -1):
     test_df[f'lagX_{i}'] = test_df['x'].shift(i, fill_value=0)
-  for i in range(20, 0, -1): 
+  for i in range(20, 0, -1):
     test_df[f'lagY_{i}'] = test_df['y'].shift(i, fill_value=0)
-  for i in range(20, 0, -1): 
+  for i in range(20, 0, -1):
     test_df[f'lagV_{i}'] = test_df['V'].shift(i, fill_value=0)
 
   test_df.drop(['x', 'y', 'V'], 1, inplace=True)
@@ -331,13 +355,13 @@ if bounce == 1:
 
   X = pd.concat([Xs, Ys, Vs], 1)
 
-  # load the pre-trained classifier  
+  # load the pre-trained classifier
   clf = load(open('clf.pkl', 'rb'))
 
   predcted = clf.predict(X)
   idx = list(np.where(predcted == 1)[0])
   idx = np.array(idx) - 10
-  
+
   if minimap == 1:
     video = cv2.VideoCapture('VideoOutput/video_with_map.mp4')
   else:
