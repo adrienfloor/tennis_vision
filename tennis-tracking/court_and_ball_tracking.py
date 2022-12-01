@@ -76,6 +76,18 @@ coords = []
 frame_i = 0
 frames = []
 t = []
+xTopLeft = 0
+yTopLeft = 0
+xBottomLeft = 0
+yBottomLeft = 0
+xTopRight = 0
+yTopRight= 0
+xBottomRight = 0
+yBottomRight = 0
+xMiddleLeft = 0
+yMiddleLeft = 0
+xMiddleRight = 0
+yMiddleRight = 0
 
 while True:
   ret, frame = video.read()
@@ -87,7 +99,18 @@ while True:
       lines = court_detector.detect(frame)
     else: # then track it
       lines = court_detector.track_court(frame)
-
+      xTopLeft = lines[20]
+      yTopLeft = lines[21]
+      xBottomLeft = lines[22]
+      yBottomLeft = lines[23]
+      xTopRight = lines[24]
+      yTopRight= lines[25]
+      xBottomRight = lines[26]
+      yBottomRight = lines[27]
+      xMiddleLeft = lines[8]
+      yMiddleLeft = lines[9]
+      xMiddleRight = lines[10]
+      yMiddleRight = lines[11]
     for i in range(0, len(lines), 4):
       x1, y1, x2, y2 = lines[i],lines[i+1], lines[i+2], lines[i+3]
       cv2.line(frame, (int(x1),int(y1)),(int(x2),int(y2)), (0,0,255), 5)
