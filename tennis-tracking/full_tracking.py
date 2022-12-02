@@ -9,10 +9,11 @@ import numpy as np
 import sys
 import time
 import sktime
+import numpy
 
 from sklearn.pipeline import Pipeline
 from Models.tracknet import trackNet
-from utils import get_video_properties
+from utils import get_video_properties, judge_ball
 from pickle import load
 from detection import *
 from court_detector import CourtDetector
@@ -122,9 +123,11 @@ while True:
       cv2.line(frame, (int(x1),int(y1)),(int(x2),int(y2)), (0,0,255), 5)
     new_frame = cv2.resize(frame, (v_width, v_height))
     frames.append(new_frame)
+    output_video.write(new_frame)
   else:
     break
 video.release()
+print('FINISHED FIRST STEP')
 
 video = cv2.VideoCapture(input_video_path)
 frame_i = 0
@@ -383,64 +386,50 @@ fourcc = cv2.VideoWriter_fourcc(*'XVID')
 print(fps)
 print(length)
 
-def judge_ball(coordinates):
-    x,y = coordinates
-    xTopLeft
-    yTopLeft,
-    xBottomLeft,
-    yBottomLeft,
-    xTopRight,
-    yTopRight,
-    xBottomRight,
-    yBottomRight,
-    xMiddleLeft,
-    yMiddleLeft,
-    xMiddleRight,
-    yMiddleRight
-
-    # Alley width is about the total width of a court divided by 8
-    totalWidth = xMiddleRight - xMiddleLeft
-    alleyWidth = totalWidth / 8
-    yMiddleLeft = xMiddleLeft + alleyWidth
-    yMiddleRight = yMiddleRight - alleyWidth
-
-    if y >= yMiddleLeft:
-        if x < xBottomLeft:
-            return 'OUT'
-        if x > xBottomRight:
-            return 'OUT'
-        if y > yBottomLeft:
-            return 'OUT'
-    else:
-        if x < xBottomLeft:
-            return 'OUT'
-        if x > xBottomRight:
-            return 'OUT'
-        if y < yTopLeft:
-            return 'OUT'
-
-
-
 output_video = cv2.VideoWriter('VideoOutput/final_video.mp4', fourcc, fps, (output_width, output_height))
 i = 0
+extremaBottom = [
+    [xBottomLeft,yBottomLeft],
+    [xBottomRight,yBottomRight],
+    [xMiddleRight,yMiddleRight],
+    [xMiddleLeft,yMiddleLeft]
+]
+extremaTop = [
+    [xTopLeft,yTopLeft],
+    [xTopRight,yTopRight],
+    [xMiddleRight,yMiddleRight],
+    [xMiddleLeft,yMiddleLeft]
+]
+score = ''
 while True:
   ret, frame = video.read()
+  call = ''
   if ret:
     # if coords[i] is not None:
+    # color_ = (0,128,0)
+    # cv2.rectangle(frame,(100,50),(300,128),(255,255,255),-1)
+    # cv2.putText(frame,call,(178,126),cv2.FONT_HERSHEY_SIMPLEX,3,color_,10,cv2.LINE_AA)
+    call = ''
+    color_ = (0,128,0)
+    cv2.rectangle(frame,(100,350),(300,478),(255,255,255),-1)
+    cv2.putText(frame,call,(158,446),cv2.FONT_HERSHEY_SIMPLEX,3,color_,10,cv2.LINE_AA)
     if i in idx:
       center_coordinates = int(xy[i][0]), int(xy[i][1])
-      radius = 3
       color = (255, 0, 0)
       thickness = -1
+
+      ex = extremaBottom if int(xy[i][1]) > yMiddleLeft else extremaTop
+      call = judge_ball(ex, center_coordinates)
+
       cv2.circle(frame, center_coordinates, 10, color, thickness)
-      cv2.rectangle(frame,(0,0),(384,128),(0,128,0),-1)
-      cv2.putText(frame,'BOUNCE',(192,64),cv2.FONT_HERSHEY_SIMPLEX,1, (255,255,255),2,cv2.LINE_AA)
+      color_ = (0,128,0) if call == 'IN' else (0, 0, 255)
+      cv2.putText(frame,call,(158,446),cv2.FONT_HERSHEY_SIMPLEX,3,color_,10,cv2.LINE_AA)
+    else:
+      call = ''
     i += 1
 
     output_video.write(frame)
   else:
-    cv2.rectangle(frame,(0,0),(384,128),(255,0,0),-1)
-    cv2.putText(frame,'NO BOUNCE',(192,64),cv2.FONT_HERSHEY_SIMPLEX,1, (255,255,255),2,cv2.LINE_AA)
     break
 
 video.release()
