@@ -59,3 +59,65 @@ def get_stickman_line_connection():
         (7, 9), (7, 5), (10, 8), (8, 6), (6, 5), (15, 13), (13, 11), (11, 12), (12, 14), (14, 16), (5, 11), (12, 6)
     ]
     return line_connection
+
+def judge_ball(extrema, coordinates):
+
+    xMiddleRight = extrema[2][0]
+    yMiddleRight = extrema[2][1]
+    xMiddleLeft = extrema[3][0]
+    yMiddleLeft = extrema[3][1]
+
+    x,y = coordinates
+
+    # Alley width is about the total width of a court divided by 8
+    totalWidth = xMiddleRight - xMiddleLeft
+    alleyWidth = totalWidth / 8
+    xMiddleLeft = xMiddleLeft + alleyWidth
+    xMiddleRight = xMiddleRight - alleyWidth
+
+    if y >= yMiddleLeft:
+        bottomLeft = extrema[0]
+        bottomRight = extrema[1]
+        ctr_points=[
+            bottomLeft,
+            bottomRight,
+            [xMiddleRight,yMiddleRight],
+            [xMiddleLeft,yMiddleLeft]
+        ]
+        ctr = np.array(ctr_points, np.int32)
+        ctr = ctr.reshape((-1,1,2))
+        result = cv2.pointPolygonTest(ctr, (x,y), False)
+
+        if result == -1:
+            print('')
+            print('OUT')
+            print('')
+            return 'OUT'
+        else:
+            print('')
+            print('IN')
+            print('')
+            return 'IN'
+    else:
+        topLeft = extrema[0]
+        topRight = extrema[1]
+        ctr_points=[
+            topLeft,
+            topRight,
+            [xMiddleRight,yMiddleRight],
+            [xMiddleLeft,yMiddleLeft]
+        ]
+        ctr = np.array(ctr_points, np.int32)
+        ctr = ctr.reshape((-1,1,2))
+        result = cv2.pointPolygonTest(ctr, (x,y), False)
+
+        if result == -1:
+            print('')
+            print('OUT')
+            print('')
+            return 'OUT'
+        else:
+            print('')
+            print('IN')
+            print('')
+            return 'IN'
