@@ -25,6 +25,7 @@ from utils import get_video_properties, get_dtype
 from detection import *
 from pickle import load
 
+from data_generation import generate_data10_train,generate_data20_train,generate_X10,generate_X20,tts_timeseries,tts_lags
 
 # parse parameters
 parser = argparse.ArgumentParser()
@@ -315,37 +316,7 @@ print('')
 df = pd.read_csv('bigDF.csv')
 df = df.drop(columns="Unnamed: 0")
 
-##data shifting
-df_shift = pd.DataFrame()
-for i in range(10, 0, -1):
-    df_shift[f'lagX_{i}'] = df['x'].shift(i, fill_value=0)
-    df_shift[f'lagY_{i}'] = df['y'].shift(i, fill_value=0)
-    df_shift[f'lagV_{i}'] = df['V'].shift(i, fill_value=0)
-
-#séquencage
-Xs = df_shift[['lagX_10',
-        'lagX_9', 'lagX_8', 'lagX_7', 'lagX_6', 'lagX_5', 'lagX_4', 'lagX_3',
-        'lagX_2', 'lagX_1']]
-
-Xs = from_2d_array_to_nested(Xs.to_numpy())
-
-Ys = df_shift[[
-    'lagY_10', 'lagY_9', 'lagY_8', 'lagY_7', 'lagY_6', 'lagY_5', 'lagY_4',
-    'lagY_3', 'lagY_2', 'lagY_1']]
-Ys = from_2d_array_to_nested(Ys.to_numpy())
-
-Vs = df_shift[['lagV_10', 'lagV_9', 'lagV_8', 'lagV_7', 'lagV_6', 'lagV_5',
-    'lagV_4', 'lagV_3', 'lagV_2', 'lagV_1']]
-Vs = from_2d_array_to_nested(Vs.to_numpy())
-
-X_train = pd.concat([Xs, Ys, Vs], 1)
-X_train.columns=["X", "Y", "V"]
-#Création Y
-id_bounces = df.index[df.bounce==1]
-for i in id_bounces:
-    df.bounce.iloc[i+1:i+10]=1
-
-y_train = df.bounce
+X_train,y_train = generate_data10_train(df)
 
 #model
 
@@ -368,47 +339,8 @@ if bounce == 1:
 
 
   # df.shift
-  test_data = pd.DataFrame()
-  for i in range(10, 0, -1):
-      test_data[f'lagX_{i}'] = test_df['x'].shift(i, fill_value=0)
-      test_data[f'lagY_{i}'] = test_df['y'].shift(i, fill_value=0)
-      test_data[f'lagV_{i}'] = test_df['V'].shift(i, fill_value=0)
+  X = generate_X10(test_df)
 
-
-  print('')
-  print('')
-  test_data
-  print("test_data:",test_data)
-  print('')
-  print('')
-
-  Xs = test_data[['lagX_10',
-        'lagX_9', 'lagX_8', 'lagX_7', 'lagX_6', 'lagX_5', 'lagX_4', 'lagX_3',
-        'lagX_2', 'lagX_1']]
-  Xs = from_2d_array_to_nested(Xs.to_numpy())
-
-  Ys = test_data[[
-        'lagY_10', 'lagY_9', 'lagY_8', 'lagY_7', 'lagY_6', 'lagY_5', 'lagY_4',
-        'lagY_3', 'lagY_2', 'lagY_1']]
-  Ys = from_2d_array_to_nested(Ys.to_numpy())
-
-  Vs = test_data[['lagV_10', 'lagV_9', 'lagV_8', 'lagV_7', 'lagV_6', 'lagV_5',
-        'lagV_4', 'lagV_3', 'lagV_2', 'lagV_1']]
-  Vs = from_2d_array_to_nested(Vs.to_numpy())
-
-  X = pd.concat([Xs, Ys, Vs],1)
-  X.columns=["X", "Y", "V"]
-  print('')
-  print('')
-  print('')
-  print('')
-  print('')
-  print(X)
-  print("columns:", X.columns)
-  print('Type de X:', type(X))
-  print('')
-  print('')
-  print('')
 
   # load the pre-trained classifier
 
@@ -454,8 +386,6 @@ if bounce == 1:
 
       output_video.write(frame)
     else:
-      cv2.rectangle(frame,(0,0),(384,128),(255,0,0),-1)
-      cv2.putText(frame,'NO BOUNCE',(192,64),cv2.FONT_HERSHEY_SIMPLEX,1, (255,255,255),2,cv2.LINE_AA)
       break
 
   video.release()
