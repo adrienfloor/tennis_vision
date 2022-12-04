@@ -218,3 +218,44 @@ def get_timeseries_and_tts(df):
     X_train, X_test, y_train, y_test = tts_timeseries(X,y)
 
     return X_train, X_test, y_train, y_test
+
+def filter_fake_bounces(df):
+    print('')
+    print('')
+    print('filter_fake_bounces')
+    print('')
+    print('')
+    print(df.columns)
+    print('')
+    print('')
+    print(type(df))
+    print('')
+    print('')
+    print(df)
+    for index, row in df.iterrows():
+        #selecting from iteration starting at index 3, stopping before last 3 indexes, and when bounce
+        if index >=3 and index <= (df.shape[0] - 3) and row['bounce'] == 1.0:
+            #selecting last 3 rows
+            last_3_rows = df.iloc[index-1]['y'] + df.iloc[index-2]['y'] + df.iloc[index-3]['y']
+            #selecting next 3 rows
+            next_3_rows = df.iloc[index+1]['y'] + df.iloc[index+2]['y'] + df.iloc[index+3]['y']
+            # diff of direction between two predicted bounces
+            diff = last_3_rows - next_3_rows
+            # if y at index -1 is greater than y at index - 3 it means we're going from top to bottom of the court
+            if df.iloc[index-1]['y'] > df.iloc[index-3]['y']:
+                # in that direction, a diff greater than or equal to zero means a change of direction
+                # we can conclude that it is a volley and not a bounce
+                if diff >= 0:
+                    # so we change it to "not bounce"
+                    # data.iloc[index]['bounce'] = 0
+                    df.loc[index, 'bounce'] = 0
+            # if y at index -1 is greater than y at index - 3 it means we're going from bottom to top of the court
+            elif df.iloc[index-1]['y'] < df.iloc[index-3]['y']:
+                # in that direction, a diff less than or equal to zero means a change of direction
+                # we can conclude that it is a volley and not a bounce
+                if diff <= 0:
+                    # data.iloc[index]['bounce'] = 0
+                    df.loc[index, 'bounce'] = 0
+        else:
+            pass
+    return df
