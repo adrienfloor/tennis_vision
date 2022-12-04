@@ -20,6 +20,7 @@ from court_detector import CourtDetector
 from sktime.datatypes._panel._convert import from_2d_array_to_nested
 from sktime.classification.interval_based import TimeSeriesForestClassifier
 from sktime.transformations.panel.compose import ColumnConcatenator
+from data_generation import *
 
 
 # parse parameters
@@ -366,14 +367,33 @@ print('')
 # load the pre-trained classifier
 
 predcted = clf.predict(X)
+
+# Trying to filter "fake" bounces
+
+# pred_series = pd.Series(predcted)
+# data_with_preds = pd.concat([X,pred_series],axis=1)
+# data_with_preds.columns=['x', 'y', 'V', 'bounce']
+# data_with_preds = data_with_preds.drop(['x', 'V'], axis=1)
+# filtered_data_with_pred = filter_fake_bounces(data_with_preds)
+# filtered_pred = filtered_data_with_pred['bounce']
+# filtered_pred = filtered_pred.to_numpy()
+
+# idx = list(np.where(filtered_pred == 1)[0])
 idx = list(np.where(predcted == 1)[0])
 idx = np.array(idx) - 10
+
 
 print('')
 print('')
 print("predict:",predcted)
 print('')
 print('')
+
+# print('')
+# print('')
+# print("LENGTH : ", len(predcted), len(filtered_pred))
+# print('')
+# print('')
 
 video = cv2.VideoCapture(output_video_path)
 
@@ -411,8 +431,8 @@ while True:
     # cv2.putText(frame,call,(178,126),cv2.FONT_HERSHEY_SIMPLEX,3,color_,10,cv2.LINE_AA)
     call = ''
     color_ = (0,128,0)
-    cv2.rectangle(frame,(100,350),(300,478),(255,255,255),-1)
-    cv2.putText(frame,call,(158,446),cv2.FONT_HERSHEY_SIMPLEX,3,color_,10,cv2.LINE_AA)
+    cv2.rectangle(frame,(70,400),(250,528),(255,255,255),-1)
+    cv2.putText(frame,call,(108,496),cv2.FONT_HERSHEY_SIMPLEX,3,color_,10,cv2.LINE_AA)
     if i in idx:
       center_coordinates = int(xy[i][0]), int(xy[i][1])
       color = (255, 0, 0)
@@ -423,7 +443,10 @@ while True:
 
       cv2.circle(frame, center_coordinates, 10, color, thickness)
       color_ = (0,128,0) if call == 'IN' else (0, 0, 255)
-      cv2.putText(frame,call,(158,446),cv2.FONT_HERSHEY_SIMPLEX,3,color_,10,cv2.LINE_AA)
+      cv2.putText(frame,call,(108,496),cv2.FONT_HERSHEY_SIMPLEX,3,color_,10,cv2.LINE_AA)
+    elif i-1 in idx or i-2 in idx or i-3 in idx or i-4 in idx or i-5 in idx:
+      color_ = (0,128,0) if call == 'IN' else (0, 0, 255)
+      cv2.putText(frame,call,(198,496),cv2.FONT_HERSHEY_SIMPLEX,3,color_,10,cv2.LINE_AA)
     else:
       call = ''
     i += 1
