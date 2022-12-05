@@ -370,16 +370,16 @@ predcted = clf.predict(X)
 
 # Trying to filter "fake" bounces
 
-# pred_series = pd.Series(predcted)
-# data_with_preds = pd.concat([X,pred_series],axis=1)
-# data_with_preds.columns=['x', 'y', 'V', 'bounce']
-# data_with_preds = data_with_preds.drop(['x', 'V'], axis=1)
-# filtered_data_with_pred = filter_fake_bounces(data_with_preds)
-# filtered_pred = filtered_data_with_pred['bounce']
-# filtered_pred = filtered_pred.to_numpy()
+pred_series = pd.Series(predcted)
+data_with_preds = pd.concat([reverse_data(X),pred_series],axis=1)
+data_with_preds.columns=['x', 'y', 'V', 'bounce']
+data_with_preds = data_with_preds.drop(['x', 'V'], axis=1)
+filtered_data_with_pred = filter_fake_bounces(data_with_preds)
+filtered_pred = filtered_data_with_pred['bounce']
+filtered_pred = filtered_pred.to_numpy()
 
-# idx = list(np.where(filtered_pred == 1)[0])
-idx = list(np.where(predcted == 1)[0])
+idx = list(np.where(filtered_pred == 1)[0])
+#idx = list(np.where(predcted == 1)[0])
 idx = np.array(idx) - 10
 
 
@@ -388,12 +388,6 @@ print('')
 print("predict:",predcted)
 print('')
 print('')
-
-# print('')
-# print('')
-# print("LENGTH : ", len(predcted), len(filtered_pred))
-# print('')
-# print('')
 
 video = cv2.VideoCapture(output_video_path)
 
