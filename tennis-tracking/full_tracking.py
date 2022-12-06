@@ -22,6 +22,11 @@ from sktime.classification.interval_based import TimeSeriesForestClassifier
 from sktime.transformations.panel.compose import ColumnConcatenator
 from data_generation import *
 
+#ML_model
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+
 
 # parse parameters
 parser = argparse.ArgumentParser()
@@ -265,113 +270,60 @@ print("nb de frame:",len(frames))
 print('')
 print('')
 
-########################## TRAIN ######################################
+########################## MODEL ######################################
 
-###Import train
-df = pd.read_csv('bigDF.csv')
-df = df.drop(columns="Unnamed: 0")
-
-##data shifting
-df_shift = pd.DataFrame()
-for i in range(10, 0, -1):
-    df_shift[f'lagX_{i}'] = df['x'].shift(i, fill_value=0)
-    df_shift[f'lagY_{i}'] = df['y'].shift(i, fill_value=0)
-    df_shift[f'lagV_{i}'] = df['V'].shift(i, fill_value=0)
-
-#séquencage
-Xs = df_shift[['lagX_10',
-        'lagX_9', 'lagX_8', 'lagX_7', 'lagX_6', 'lagX_5', 'lagX_4', 'lagX_3',
-        'lagX_2', 'lagX_1']]
-
-Xs = from_2d_array_to_nested(Xs.to_numpy())
-
-Ys = df_shift[[
-    'lagY_10', 'lagY_9', 'lagY_8', 'lagY_7', 'lagY_6', 'lagY_5', 'lagY_4',
-    'lagY_3', 'lagY_2', 'lagY_1']]
-Ys = from_2d_array_to_nested(Ys.to_numpy())
-
-Vs = df_shift[['lagV_10', 'lagV_9', 'lagV_8', 'lagV_7', 'lagV_6', 'lagV_5',
-    'lagV_4', 'lagV_3', 'lagV_2', 'lagV_1']]
-Vs = from_2d_array_to_nested(Vs.to_numpy())
-
-X_train = pd.concat([Xs, Ys, Vs], 1)
-X_train.columns=["X", "Y", "V"]
-#Création Y
-id_bounces = df.index[df.bounce==1]
-for i in id_bounces:
-    df.bounce.iloc[i+1:i+10]=1
-
-y_train = df.bounce
-
-#model
-
-steps = [
-    ("concatenate", ColumnConcatenator()),
-    ("classify", TimeSeriesForestClassifier(n_estimators=100)),]
-
-clf = Pipeline(steps)
-clf.fit(X_train, y_train)
-
-
-
-# Predicting Bounces
+# Tracknet data
 test_df = pd.DataFrame({'x': [coord[0] for coord in xy[:-1]], 'y':[coord[1] for coord in xy[:-1]], 'V': V})
-print('')
-print('')
-print(test_df)
-print('')
-print('')
 
-# df.shift
-test_data = pd.DataFrame()
-for i in range(10, 0, -1):
-    test_data[f'lagX_{i}'] = test_df['x'].shift(i, fill_value=0)
-    test_data[f'lagY_{i}'] = test_df['y'].shift(i, fill_value=0)
-    test_data[f'lagV_{i}'] = test_df['V'].shift(i, fill_value=0)
-
-print('')
-print('')
-test_data
-print("test_data:",test_data)
-print('')
-print('')
-
-Xs = test_data[['lagX_10',
-      'lagX_9', 'lagX_8', 'lagX_7', 'lagX_6', 'lagX_5', 'lagX_4', 'lagX_3',
-      'lagX_2', 'lagX_1']]
-Xs = from_2d_array_to_nested(Xs.to_numpy())
-
-Ys = test_data[[
-      'lagY_10', 'lagY_9', 'lagY_8', 'lagY_7', 'lagY_6', 'lagY_5', 'lagY_4',
-      'lagY_3', 'lagY_2', 'lagY_1']]
-Ys = from_2d_array_to_nested(Ys.to_numpy())
-
-Vs = test_data[['lagV_10', 'lagV_9', 'lagV_8', 'lagV_7', 'lagV_6', 'lagV_5',
-      'lagV_4', 'lagV_3', 'lagV_2', 'lagV_1']]
-Vs = from_2d_array_to_nested(Vs.to_numpy())
-
-X = pd.concat([Xs, Ys, Vs],1)
-X.columns=["X", "Y", "V"]
-print('')
-print('')
-print('')
-print('')
-print('')
-print(X)
-print("columns:", X.columns)
-print('Type de X:', type(X))
-print('')
-print('')
-print('')
+X_TS = generate_X10(test_df)
+X_ML = generate_X_ML(test_df)
 
 # load the pre-trained classifier
 
-predcted = clf.predict(X)
+model_TS = pickle.load(open('TSFClassifier2.pkl', "rb"))
+model_ML = pickle.load(open('SVC2.pkl', "rb"))
 
+# Make predictions
+
+# pred_TS = pd.Series(model_TS.predict(X_TS))
+# pred_ML = pd.Series(model_ML.predict(X_ML))
+# predictions = pd.concat([pred_TS,pred_ML], axis=1)
+# predictions.reset_index(inplace=True)
+# predictions.columns = ['index','pred_TS', 'pred_ML']
+# predictions.set_index('index', inplace=True)
+# predictions['pred_ML'] = predictions['pred_ML'].fillna(value=0)
+# print("")
+# print("")
+# print("")
+# print(predictions['pred_ML'])
+# print("")
+# print("")
+# print("")
+# print(predictions['pred_TS'])
+# print("")
+# print("")
+# print("")
+# print(predictions.columns)
+# print("")
+# print("")
+# print("")
+# print(type(predictions['pred_ML']))
+# print("")
+# print("")
+# print("")
+# predcted = predictions['pred_TS'].astype(int)&predictions['pred_ML'].astype(int)
+# print("")
+# print("")
+# print("")
+# print(predcted.shape)
+# print("")
+# print("")
+# print("")
 # Trying to filter "fake" bounces
+predcted = model_TS.predict(X_TS)
 
 pred_series = pd.Series(predcted)
-data_with_preds = pd.concat([reverse_data(X),pred_series],axis=1)
+data_with_preds = pd.concat([test_df,pred_series],axis=1)
 data_with_preds.columns=['x', 'y', 'V', 'bounce']
 data_with_preds = data_with_preds.drop(['x', 'V'], axis=1)
 filtered_data_with_pred = filter_fake_bounces(data_with_preds)

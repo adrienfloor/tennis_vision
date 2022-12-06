@@ -43,6 +43,22 @@ def generate_X10(df):
     return X
 
 # -----------------------------------------------------------------------------#
+#Generate X for ml
+
+def generate_X_ML(X):
+    df2 = X.copy()
+    for i in range(-5, 6, 1):
+        df2[f'lagX_{i}'] = df2['x'].shift(i) - df2['x']
+        df2[f'lagY_{i}'] = df2['y'].shift(i) - df2['y']
+        df2[f'lagV_{i}'] = df2['V'].shift(i) - df2['V']
+
+    X_bis = df2.dropna()
+    X_bis = X_bis.drop(['x','y','V'],axis=1)
+
+
+    return X_bis
+
+# -----------------------------------------------------------------------------#
 #Generate X with 20 lags per sequence
 
 def generate_X20(df):
@@ -135,6 +151,7 @@ def generate_data10_train(df):
 
     return X, y_train
 
+
 # -----------------------------------------------------------------------------#
 
 #Generate X,y train 10lags per sequence
@@ -189,27 +206,49 @@ def generate_data20_train(df):
 
     return X, y_train
 
+# -----------------------------------------------------------------------------#
+#Generate df_lags_train for ML
+
+def generate_df_lags_ML_train(X):
+    df2 = X.copy()
+    for i in range(-5, 6, 1):
+        df2[f'lagX_{i}'] = df2['x'].shift(i) - df2['x']
+        df2[f'lagY_{i}'] = df2['y'].shift(i) - df2['y']
+        df2[f'lagV_{i}'] = df2['V'].shift(i) - df2['V']
+
+    X_bis = df2.dropna()
+    X_bis = X_bis.drop(['x','y','V'],axis=1)
+
+
+    return X_bis
+
+# -----------------------------------------------------------------------------#
 #Generate train/test/split for dataframe lags
 
 def tts_lags(df):
     nb_test = 800
-    X_train = df.iloc[:-nb_test, :-1]
-    y_train = df.iloc[:-nb_test, -1]
-    X_test = df.iloc[-nb_test:, :-1]
-    y_test = df.iloc[-nb_test:, -1]
-
-
-#Generate train/test/split for timeseries df
-
-def tts_timeseries(X,y):
-    nb_test = 800
+    X = df.drop('bounce',1)
+    y = df.bounce
     X_train = X.iloc[:-nb_test, :]
     y_train = y.iloc[:-nb_test]
-    X_test = X.iloc[:nb_test-10, :]
-    y_test = y.iloc[:nb_test-10]
+    X_test = X.iloc[-nb_test:, :]
+    y_test = y.iloc[-nb_test:]
 
     return X_train, X_test, y_train, y_test
 
+# -----------------------------------------------------------------------------#
+#Generate train/test/split for timeseries df
+
+def tts_timeseries(X,y):
+    nb_test = 2572
+    X_train = X.iloc[:nb_test, :]
+    y_train = y.iloc[:nb_test]
+    X_test = X.iloc[nb_test+10:, :]
+    y_test = y.iloc[nb_test+10:]
+
+    return X_train, X_test, y_train, y_test
+
+# -----------------------------------------------------------------------------#
 #Generate timeseries10lags + train/test/split
 
 def get_timeseries_and_tts(df):
@@ -219,6 +258,17 @@ def get_timeseries_and_tts(df):
 
     return X_train, X_test, y_train, y_test
 
+# -----------------------------------------------------------------------------#
+#Generate lags + tts (for training)
+
+def get_lags_and_tts(df):
+    X = generate_df_lags_ML_train(df)
+
+    X_train, X_test, y_train, y_test = tts_lags(df)
+
+    return X_train, X_test, y_train, y_test
+
+# -----------------------------------------------------------------------------#
 def filter_fake_bounces(df):
     print('')
     print('')
@@ -266,6 +316,7 @@ def filter_fake_bounces(df):
             pass
     return df
 
+# -----------------------------------------------------------------------------#
 def reverse_data(df):
     #Reverse sequences
     Xs = from_nested_to_2d_array(df.X)
@@ -307,6 +358,7 @@ def reverse_data(df):
 
     return X_final
 
+# -----------------------------------------------------------------------------#
 def reverse_data_20(df):
     #Reverse sequences
     Xs = (df.X)
