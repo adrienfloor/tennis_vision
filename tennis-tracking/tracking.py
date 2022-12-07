@@ -389,5 +389,5 @@ while True:
 video_final.release()
 output_final_video.release()
 
-os.remove("/VideoOutput/video_lines_output.mp4")
-os.remove("/VideoOutput/video_tracknet_output.mp4")
+#os.remove("/VideoOutput/video_lines_output.mp4")
+#os.remove("/VideoOutput/video_tracknet_output.mp4")
