@@ -42,14 +42,14 @@ save_weights_path = 'WeightsTracknet/model.1'
 
 # get video fps&video size
 video_one = cv2.VideoCapture(input_video_path)
-fps = int(video.get(cv2.CAP_PROP_FPS))
+fps = int(video_one.get(cv2.CAP_PROP_FPS))
 print('fps : {}'.format(fps))
-output_width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
-output_height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+output_width = int(video_one.get(cv2.CAP_PROP_FRAME_WIDTH))
+output_height = int(video_one.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 # try to determine the total number of frames in the video file
 prop = cv2.CAP_PROP_FRAME_COUNT
-total = int(video.get(prop))
+total = int(video_one.get(prop))
 
 # start from first frame
 currentFrame = 0
@@ -77,7 +77,7 @@ output_lines_video = cv2.VideoWriter("VideoOutput/video_lines_output.mp4", fourc
 court_detector = CourtDetector()
 
 # get videos properties
-fps, length, v_width, v_height = get_video_properties(video)
+fps, length, v_width, v_height = get_video_properties(video_one)
 
 coords = []
 frame_i = 0
@@ -102,7 +102,7 @@ while True:
 
   if ret:
     if frame_i == 1:
-      print('Detecting the court and the players...')
+      print('Detecting the court ...')
       lines = court_detector.detect(frame)
     else: # then track it
       lines = court_detector.track_court(frame)
@@ -128,7 +128,7 @@ while True:
     break
 video_one.release()
 output_lines_video.release()
-print('FINISHED FIRST STEP')
+print('Lines detected')
 
 #video_two = cv2.VideoCapture("video_lines_output.mp4")
 output_tracknet_video = cv2.VideoWriter("VideoOutput/video_tracknet_output.mp4", fourcc, fps, (output_width, output_height))
@@ -225,8 +225,8 @@ for img in frames:
     currentFrame += 1
 
 # everything is done, release the video
-#video_two.release()
 output_tracknet_video.release()
+print('Ball trajectories detected')
 
 
 for _ in range(3):
@@ -279,42 +279,6 @@ X_ML = generate_X_ML(test_df)
 model_TS = pickle.load(open('TSFClassifier2.pkl', "rb"))
 model_ML = pickle.load(open('SVC2.pkl', "rb"))
 
-# Make predictions
-
-# pred_TS = pd.Series(model_TS.predict(X_TS))
-# pred_ML = pd.Series(model_ML.predict(X_ML))
-# predictions = pd.concat([pred_TS,pred_ML], axis=1)
-# predictions.reset_index(inplace=True)
-# predictions.columns = ['index','pred_TS', 'pred_ML']
-# predictions.set_index('index', inplace=True)
-# predictions['pred_ML'] = predictions['pred_ML'].fillna(value=0)
-# print("")
-# print("")
-# print("")
-# print(predictions['pred_ML'])
-# print("")
-# print("")
-# print("")
-# print(predictions['pred_TS'])
-# print("")
-# print("")
-# print("")
-# print(predictions.columns)
-# print("")
-# print("")
-# print("")
-# print(type(predictions['pred_ML']))
-# print("")
-# print("")
-# print("")
-# predcted = predictions['pred_TS'].astype(int)&predictions['pred_ML'].astype(int)
-# print("")
-# print("")
-# print("")
-# print(predcted.shape)
-# print("")
-# print("")
-# print("")
 # Trying to filter "fake" bounces
 predcted = model_TS.predict(X_TS)
 
@@ -337,6 +301,8 @@ print("predict:",predcted)
 print('')
 print('')
 
+predcted
+
 video_final = cv2.VideoCapture("VideoOutput/video_tracknet_output.mp4")
 
 output_width = int(video_final.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -346,14 +312,6 @@ length = int(video_final.get(cv2.CAP_PROP_FRAME_COUNT))
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
 output_final_video = cv2.VideoWriter("VideoOutput/video_final_output.mp4", fourcc, fps, (output_width, output_height))
-
-# output_video = cv2.VideoCapture(output_video_path)
-
-# output_width = int(output_video.get(cv2.CAP_PROP_FRAME_WIDTH))
-# output_height = int(output_video.get(cv2.CAP_PROP_FRAME_HEIGHT))
-# fps = int(output_video.get(cv2.CAP_PROP_FPS))
-# length = int(output_video.get(cv2.CAP_PROP_FRAME_COUNT))
-# fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
 print(fps)
 print(length)
@@ -399,7 +357,6 @@ while True:
     color_ = (0,128,0)
     cv2.rectangle(frame,(0,0),(580,150),(255,255,255),-1)
     cv2.putText(frame,f'Bounces:{bounce_count}',(10,100),cv2.FONT_HERSHEY_SIMPLEX,3,(0,0,0),10,cv2.LINE_AA)
-    # cv2.putText(frame,call,(60,100),cv2.FONT_HERSHEY_SIMPLEX,3,color_,10,cv2.LINE_AA)
     if i in idx:
       color = (255, 0, 0)
       thickness = -1
@@ -416,22 +373,21 @@ while True:
       cv2.putText(frame,f'Bounces:{bounce_count}',(10,100),cv2.FONT_HERSHEY_SIMPLEX,3,(0,0,0),10,cv2.LINE_AA)
       output = merge(frame, img)
       output_final_video.write(output)
-      #cv2.putText(frame,call,(60,100),cv2.FONT_HERSHEY_SIMPLEX,3,color_,10,cv2.LINE_AA)
     elif i-1 in idx or i-2 in idx or i-3 in idx or i-4 in idx or i-5 in idx or i-6 in idx or i-7 in idx or i-8 in idx or i-9 in idx or i-10 in idx:
       color_ = (0,128,0) if call == 'IN' else (0, 0, 255)
-      #call = judge_ball(ex, center_coordinates)
       img = nadal if call == 'IN' else federer
       cv2.putText(frame,f'Bounces:{bounce_count}',(10,100),cv2.FONT_HERSHEY_SIMPLEX,3,(0,0,0),10,cv2.LINE_AA)
       output = merge(frame, img)
       output_final_video.write(output)
-      #cv2.putText(frame,call,(60,100),cv2.FONT_HERSHEY_SIMPLEX,3,color_,10,cv2.LINE_AA)
     else:
       cv2.putText(frame,f'Bounces:{bounce_count}',(10,100),cv2.FONT_HERSHEY_SIMPLEX,3,(0,0,0),10,cv2.LINE_AA)
       output_final_video.write(frame)
-      #call = ''
     i += 1
   else:
     break
 
 video_final.release()
 output_final_video.release()
+
+os.remove("/VideoOutput/video_lines_output.mp4")
+os.remove("/VideoOutput/video_tracknet_output.mp4")
